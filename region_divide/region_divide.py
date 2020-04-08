@@ -115,6 +115,12 @@ class RegionDivide:
 	
 	#设置区域划分参数
 	def setRegionParams(self,L1,L2,L3,L4,L5):
+		self.L1 = L1
+		self.L2 = L2
+		self.L3 = L3
+		self.L4 = L4
+		self.L5 = L5
+		
 		#x,y,z,区域分割点世界坐标
 		A1 = [L1,L4/2,-self.height]
 		A2 = [L1,-L4/2,-self.height]
@@ -122,7 +128,7 @@ class RegionDivide:
 		A4 = [L1+L2,-L4/2,-self.height]
 		A5 = [L1+L2+L3,L4/2,-self.height]
 		A6 = [L1+L2+L3,-L4/2,-self.height]
-		
+
 		B1 = [L1,L4/2+L5,-self.height]
 		B2 = [L1,-L4/2-L5,-self.height]
 		B3 = [L1+L2,L4/2+L5,-self.height]
@@ -166,10 +172,41 @@ class RegionDivide:
 		self.b4 = xyz2pixel(B4,self.fx,self.fy,self.cx,self.cy)
 		self.b5 = xyz2pixel(B5,self.fx,self.fy,self.cx,self.cy)
 		self.b6 = xyz2pixel(B6,self.fx,self.fy,self.cx,self.cy)
+	
+	#空间位置求区域
+	def whatArea(self,x,z):
+		if(x>=-self.L4/2-self.L5 and x<-self.L4/2): #1,5
+			if(z>=self.L1 and z<self.L1+self.L2):
+				return 1
+			elif(z>=self.L1+self.L2 and z <self.L1+self.L2+self.L3):
+				return 5
+			else:
+				return 0
+		elif(x>=-self.L4/2 and x<0): #2,6
+			if(z>=self.L1 and z<self.L1+self.L2):
+				return 2
+			elif(z>=self.L1+self.L2 and z <self.L1+self.L2+self.L3):
+				return 6
+			else:
+				return 0
+		elif(x>=0 and x<self.L4/2): #3,7
+			if(z>=self.L1 and z<self.L1+self.L2):
+				return 3
+			elif(z>=self.L1+self.L2 and z <self.L1+self.L2+self.L3):
+				return 7
+			else:
+				return 0
+		elif(x>=self.L4/2 and x<self.L4/2+self.L5): #4,8
+			if(z>=self.L1 and z<self.L1+self.L2):
+				return 4
+			elif(z>=self.L1+self.L2 and z <self.L1+self.L2+self.L3):
+				return 8
+			else:
+				return 0
+		else:
+			return 0
 		
 
-		
-	
 	#区域划线
 	def drawLine(self,img,color=(0,255,0),w=2):
 		cv2.line(img,self.b1,self.b2,color,w)
@@ -180,7 +217,7 @@ class RegionDivide:
 		cv2.line(img,self.m1,self.m2,color,w)
 		cv2.line(img,self.a2,self.a6,color,w)
 		return img
-		
+
 	def draw(self,img):
 		if(self.mask is None):
 			size = (self.size[1],self.size[0],3)
@@ -188,8 +225,7 @@ class RegionDivide:
 			self.drawLine(self.mask,(0,0,255))
 		img = cv2.addWeighted(img,1.0,self.mask,0.2,0)
 		return img
-	
-	
+
 	#捕获鼠标按键
 	def openMouseCapture(self,windowName):
 		self._pixel2disTable = pixel2disTable(self.size[0],self.size[1],self.height,
@@ -197,11 +233,12 @@ class RegionDivide:
 
 		cv2.setMouseCallback(windowName, self.onMouse)
 		
-	#地面像素点转空间距离
+	#地面像素点转空间距离和区域信息
 	def onMouse(self,event,x,y,flags,param):
 		if(event == cv2.EVENT_LBUTTONDOWN):
-			loc = self._pixel2disTable[x,y]
-			print("像素坐标(%4d,%4d)  位置坐标(%4.1fm,%4.1fm)" %(x,y,loc[0],loc[1]))
+			loc = self._pixel2disTable[x,y] #像素求空间位置
+			print("像素坐标uv(%4d,%4d)  位置坐标xz(%4.1fm,%4.1fm)" %(x,y,loc[0],loc[1]))
+			print("区域： %d\n" %self.whatArea(loc[0],loc[1])) #空间位置求区域
 
 
 def main():	
@@ -224,6 +261,6 @@ def main():
 	
 
 if __name__ == '__main__':
-	#main()
+	main()
 	pass
 	

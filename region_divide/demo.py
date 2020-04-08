@@ -27,6 +27,7 @@ if __name__ == '__main__':
 	img = regionDivide.draw(img)
 	
 	cv2.imshow(windowName,img)
+	cv2.imwrite("b.png",img)
 	
 	cv2.waitKey()
 	
