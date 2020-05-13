@@ -2,4 +2,5 @@ image/
 ros_ws/build/
 ros_ws/devel/
 ros_ws/src/CMakeLists.txt
+*.pyc
 

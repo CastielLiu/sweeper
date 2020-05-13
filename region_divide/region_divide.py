@@ -1,3 +1,5 @@
+#coding=utf-8
+
 import cv2
 from math import *
 import math
@@ -112,6 +114,34 @@ class RegionDivide:
 		self.size = size
 		self.height = h  #摄像头安装高度
 		self.theta = theta#摄像头安装倾斜角,下倾为正
+	
+	#从文件载入相机参数
+	def loadCameraInfo(self,file_name):
+		fs = cv2.FileStorage(file_name, cv2.FileStorage_READ)
+		if(not fs.isOpened()):
+			print("No file: %s" %file_name)
+			return False
+			
+		CameraMat = fs.getNode('CameraMat').mat()
+		self.fx = CameraMat[0,0]
+		self.fy = CameraMat[1,1]
+		self.cx = CameraMat[0,2]
+		self.cy = CameraMat[1,2]
+		value = fs.getNode('ImageSize')
+		default = []
+		for i in range(value.size()):
+			default.append(value.at(i).real())
+		
+		self.size = default
+		print(self.size)
+		
+		self.height = fs.getNode('Height').real()
+		self.theta = fs.getNode('Theta').real()
+		print("camera height:%.2f\t theta:%.2f" %(self.height,self.theta))
+		fs.release()
+		return True
+		
+		
 	
 	#设置区域划分参数
 	def setRegionParams(self,L1,L2,L3,L4,L5):
@@ -243,7 +273,10 @@ class RegionDivide:
 
 def main():	
 	regionDivide = RegionDivide()
-	regionDivide.setCameraParams(721.5,721.5,609.5,172.85,(1242,375),1.65,0.0)
+	#regionDivide.setCameraParams(721.5,721.5,609.5,172.85,(1242,375),1.65,0.0)
+	if(not regionDivide.loadCameraInfo("1.yaml")):
+		return
+		
 	regionDivide.setRegionParams(10,5,5,3,3)
 	
 	img = cv2.imread("a.png")

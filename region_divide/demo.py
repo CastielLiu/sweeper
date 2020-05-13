@@ -1,14 +1,19 @@
+#coding=utf-8
+
 import cv2
 from region_divide import RegionDivide
 
-
-if __name__ == '__main__':
-	
+def main():
 	#实例化区域划分工具
 	regionDivide = RegionDivide() 
 	#配置相机参数,fx,fy,cx,cy,(size),h,theta 
 	#h:相机安装高度 theta:相机俯仰角
-	regionDivide.setCameraParams(721.5,721.5,609.5,172.85,(1242,375),1.65,0.0)
+	#regionDivide.setCameraParams(721.5,721.5,609.5,172.85,(1242,375),1.65,0.0)
+	
+	#从文件载入相机参数
+	if(not regionDivide.loadCameraInfo("1.yaml")):
+		return
+	
 	#设置区域划分参数L1,L2,L3,L4,L5
 	regionDivide.setRegionParams(6,10,10,3.5,3)
 	
@@ -30,6 +35,10 @@ if __name__ == '__main__':
 	cv2.imwrite("b.png",img)
 	
 	cv2.waitKey()
+
+if __name__ == '__main__':
+	main()
+	
 	
 	
 	
