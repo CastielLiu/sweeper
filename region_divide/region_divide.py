@@ -123,14 +123,14 @@ class RegionDivide:
 			return False
 			
 		CameraMat = fs.getNode('CameraMat').mat()
-		self.fx = CameraMat[0,0]
-		self.fy = CameraMat[1,1]
-		self.cx = CameraMat[0,2]
-		self.cy = CameraMat[1,2]
+		self.fx = int(CameraMat[0,0])
+		self.fy = int(CameraMat[1,1])
+		self.cx = int(CameraMat[0,2])
+		self.cy = int(CameraMat[1,2])
 		value = fs.getNode('ImageSize')
 		default = []
 		for i in range(value.size()):
-			default.append(value.at(i).real())
+			default.append(int(value.at(i).real()))
 		
 		self.size = default
 		print(self.size)

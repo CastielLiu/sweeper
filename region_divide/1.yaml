@@ -4,7 +4,7 @@ CameraExtrinsicMat: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data: [ 1672.463501, 0.000000, 698.692115, 0.000000, 0.000000, 1772.793091, 335.839318, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000 ]
+   data: [ 927.452039, 0.000000, 324.416113, 0.000000, 928.041926, 209.079396, 0.000000, 0.000000, 1.000000]
 CameraMat: !!opencv-matrix
    rows: 3
    cols: 3
@@ -15,8 +15,8 @@ DistCoeff: !!opencv-matrix
    cols: 1
    dt: d
    data: [-0.600413, 0.449119, 0.002375, -0.005977, 0.000000]
-ImageSize: [1280, 720]
+ImageSize: [640, 480]
 Reprojection Error: 0.0
 DistModel: plumb_bob
 Height: 1.25
-Theta: 0.015
+Theta: 0.5
