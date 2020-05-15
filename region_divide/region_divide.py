@@ -117,6 +117,7 @@ class RegionDivide:
 	
 	#从文件载入相机参数
 	def loadCameraInfo(self,file_name):
+		print("---loading camera info---")
 		fs = cv2.FileStorage(file_name, cv2.FileStorage_READ)
 		if(not fs.isOpened()):
 			print("No file: %s" %file_name)
@@ -127,29 +128,43 @@ class RegionDivide:
 		self.fy = int(CameraMat[1,1])
 		self.cx = int(CameraMat[0,2])
 		self.cy = int(CameraMat[1,2])
+		print("fx,fy,cx,cy",self.fx, self.fy, self.cx, self.cy)
+		
 		value = fs.getNode('ImageSize')
 		default = []
 		for i in range(value.size()):
 			default.append(int(value.at(i).real()))
 		
 		self.size = default
-		print(self.size)
+		print("image size:", self.size)
 		
+		if(fs.getNode('Height').empty()):
+			print("No 'Height' param in %s" %file_name)
+			return False
+			
 		self.height = fs.getNode('Height').real()
+		
+		if(fs.getNode('Theta').empty()):
+			print("No 'Theta' param in %s" %file_name)
+			return False
+			
 		self.theta = fs.getNode('Theta').real()
-		print("camera height:%.2f\t theta:%.2f" %(self.height,self.theta))
+		print("camera height:%.2fm\t theta:%.2fdeg" %(self.height,self.theta))
+		self.theta = self.theta*math.pi/180.0
+		
 		fs.release()
+		print("---load camera info ok ---")
 		return True
 		
 		
 	
 	#设置区域划分参数
 	def setRegionParams(self,L1,L2,L3,L4,L5):
-		self.L1 = L1
-		self.L2 = L2
-		self.L3 = L3
-		self.L4 = L4
-		self.L5 = L5
+		self.L1 = L1 = L1*1.0
+		self.L2 = L2 = L2*1.0
+		self.L3 = L3 = L3*1.0
+		self.L4 = L4 = L4*1.0
+		self.L5 = L5 = L5*1.0
 		
 		#x,y,z,区域分割点世界坐标
 		A1 = [L1,L4/2,-self.height]
@@ -159,6 +174,7 @@ class RegionDivide:
 		A5 = [L1+L2+L3,L4/2,-self.height]
 		A6 = [L1+L2+L3,-L4/2,-self.height]
 
+		#print("world: A* ",A1,A2,A3,A4,A5,A6)
 		B1 = [L1,L4/2+L5,-self.height]
 		B2 = [L1,-L4/2-L5,-self.height]
 		B3 = [L1+L2,L4/2+L5,-self.height]
@@ -166,7 +182,7 @@ class RegionDivide:
 		B5 = [L1+L2+L3,L4/2+L5,-self.height]
 		B6 = [L1+L2+L3,-L4/2-L5,-self.height]
 		
-		#print("世界坐标: ",A1,A2,A3,A4,A5,A6)
+		#print("world: A* ",A1,A2,A3,A4,A5,A6)
 		
 		#区域分割点相机坐标
 		A1 = world2cameraPoint(self.theta,A1)
@@ -175,7 +191,7 @@ class RegionDivide:
 		A4 = world2cameraPoint(self.theta,A4)
 		A5 = world2cameraPoint(self.theta,A5)
 		A6 = world2cameraPoint(self.theta,A6)
-		#print("相机坐标: ",A1,A2,A3,A4,A5,A6)
+		#print("camera: A* ",A1,A2,A3,A4,A5,A6)
 		
 		B1 = world2cameraPoint(self.theta,B1)
 		B2 = world2cameraPoint(self.theta,B2)
@@ -202,6 +218,7 @@ class RegionDivide:
 		self.b4 = xyz2pixel(B4,self.fx,self.fy,self.cx,self.cy)
 		self.b5 = xyz2pixel(B5,self.fx,self.fy,self.cx,self.cy)
 		self.b6 = xyz2pixel(B6,self.fx,self.fy,self.cx,self.cy)
+		
 	
 	#空间位置求区域
 	def whatArea(self,x,z):
@@ -246,13 +263,16 @@ class RegionDivide:
 		cv2.line(img,self.a1,self.a5,color,w)
 		cv2.line(img,self.m1,self.m2,color,w)
 		cv2.line(img,self.a2,self.a6,color,w)
+		
+		print(self.b1,self.b2,self.b3,self.b4,self.b5,self.b6)
+		print(self.m1,self.m2)
 		return img
 
 	def draw(self,img):
 		if(self.mask is None):
 			size = (self.size[1],self.size[0],3)
 			self.mask = np.zeros(size,dtype='uint8')
-			self.drawLine(self.mask,(0,0,255))
+			self.drawLine(self.mask,(0,255,0))
 		img = cv2.addWeighted(img,1.0,self.mask,0.2,0)
 		return img
 

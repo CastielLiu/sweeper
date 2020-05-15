@@ -1,3 +1,6 @@
 [submodule "ros_ws/src/image_saver"]
 	path = ros_ws/src/image_saver
 	url = https://github.com/CastielLiu/image_saver.git
+[submodule "ros_ws/src/my_image_publisher"]
+	path = ros_ws/src/my_image_publisher
+	url = https://github.com/CastielLiu/my_image_publisher

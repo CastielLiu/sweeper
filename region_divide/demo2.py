@@ -14,22 +14,17 @@ g_cv_bridge = CvBridge()
 IMG_WINDOW_NAME = "image"
 
 
-
 def image_callback(rosImage):
 	try:
 		frame = g_cv_bridge.imgmsg_to_cv2(rosImage, "bgr8")
 	except CvBridgeError as e:
 		print(e)
 		return 
-	print(frame.shape)
 	
 	frame = g_regionDivide.draw(frame)
 	
-	cv2.imwrite("a.jpg",frame)
-	
-#	cv2.imshow(IMG_WINDOW_NAME,frame)
-
-#	cv2.waitKey(1)
+	cv2.imshow(IMG_WINDOW_NAME,frame)
+	cv2.waitKey(1)
 
 
 def main():
@@ -38,11 +33,11 @@ def main():
 	
 	image_sub = rospy.Subscriber("/image_rectified",Image,image_callback, queue_size=1)
 		
-	if(not g_regionDivide.loadCameraInfo("1.yaml")):
+	if(not g_regionDivide.loadCameraInfo("right.yaml")):
 		return
 	#设置区域划分参数L1,L2,L3,L4,L5
-	g_regionDivide.setRegionParams(6,10,10,3.5,3)
- 
+	#g_regionDivide.setRegionParams(6,10,10,3.5,3)
+	g_regionDivide.setRegionParams(5,3,3,3,2)
 	cv2.namedWindow(IMG_WINDOW_NAME,0)
 
 	g_regionDivide.openMouseCapture(IMG_WINDOW_NAME)
