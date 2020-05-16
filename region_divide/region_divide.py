@@ -84,6 +84,8 @@ def world2cameraMatrix(theta):
 	return Ry*Rz*Rx
 
 #世界坐标点转到相机坐标系
+#~theta:相机的安装俯仰角
+#~xyz: 世界坐标点
 def world2cameraPoint(theta,xyz):
 	point = np.mat([[xyz[0]],[xyz[1]],[xyz[2]]])
 	R = world2cameraMatrix(theta)
