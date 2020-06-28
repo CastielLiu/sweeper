@@ -39,7 +39,7 @@ def pixel2disTable(colCnt,rowCnt,h,theta,fx,fy,cx,cy):
 		for col in range(colCnt):
 			#当前像素点(col,row)所显示的地面与摄像头的连线为L1
 			#alpha为L1与斜线段L的夹角
-			alpha = math.atan2(col-cx,fx)
+			alpha = math.atan2(col-cx,fx/math.cos(theta_i))
 			x = l*math.tan(alpha)
 			table[col][row][0] = x
 			table[col][row][1] = z
