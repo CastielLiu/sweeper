@@ -1,0 +1,2 @@
+
+AreaInfo[] infos
