@@ -9,7 +9,7 @@ class Logger:
 	def __init__(self):
 		self.sub_area_info = None
 		self.sub_can = None
-		self.areas_info = None
+		self.areas_info_msg = None
 		self.file = None
 		
 	def __del__(self):
@@ -27,25 +27,28 @@ class Logger:
 	
 	#1
 	def areasInfoCallback(self, msg):
-		self.areas_info = msg.infos
+		self.areas_info_msg = msg
 	
 	#2
 	def canFrameArrayCallback(self, msg):
 		if(msg.header.frame_id != "ch1"):
 			return
-		if(self.areas_info is None):
+		if(self.areas_info_msg is None):
 			return;
 		
 		if(self.file is None):
 			print("log file is not opened!")
 			return
+			
+		if(msg.header.stamp != self.areas_info_msg.header.stamp):
+			return
 		
-		self.dataCheck(msg.frames[0], self.areas_info)
+		self.dataCheck(msg.frames[0], self.areas_info_msg.infos)
 		
 		stamp = rospy.get_rostime().to_sec()
 		
 		line = "%.3f\t" %(stamp)
-		for areaInfo in self.areas_info:
+		for areaInfo in self.areas_info_msg.infos:
 			line += "%d,%d,%d,%d " %(areaInfo.area_id, areaInfo.rubbish_grade, \
 									areaInfo.has_person, areaInfo.vegetation_type)
 		line += "\t"

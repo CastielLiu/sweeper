@@ -38,6 +38,8 @@ public:
 
 	void areasInfoCallback(const transmiter::AreasInfo::ConstPtr& areas_info)
 	{
+		areas_info_frames_.header.stamp = areas_info->header.stamp;
+		
 		can_msgs::Frame& frame = areas_info_frames_.frames[0];
 
 		for(auto& byte:frame.data) byte = 0;
