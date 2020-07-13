@@ -50,14 +50,22 @@ public:
 				ROS_ERROR("[%s] area id %d is invalid.",__NAME__, areaInfo.area_id);
 				continue;
 			}
-			if(areaInfo.rubbish_grade >5)
+			if(areaInfo.rubbish_grade > 8)
 			{
 				ROS_ERROR("[%s] rubbish grade %d is invalid, in area %d.",__NAME__,areaInfo.rubbish_grade, areaInfo.area_id);
 				continue;
 			}
+			if(areaInfo.vegetation_type >3)
+			{
+				ROS_ERROR("[%s] vegetation type %d is invalid, in area %d.",__NAME__,areaInfo.vegetation_type, areaInfo.area_id);
+				continue;
+			}
+			
 			if(areaInfo.has_person)
 				frame.data[4] |= (1<<(areaInfo.area_id-1));
-			frame.data[(areaInfo.area_id-1)/2] |= (areaInfo.rubbish_grade << (4*((areaInfo.area_id-1)%2)));
+			frame.data[(areaInfo.area_id-1)/2] |= areaInfo.rubbish_grade << (4*((areaInfo.area_id-1)%2));
+			frame.data[(areaInfo.area_id-1)/4+5] |= areaInfo.vegetation_type << 2*((areaInfo.area_id-1)%4);
+ 
 		}
 		pub_can_msgs_.publish(areas_info_frames_);
 	}
