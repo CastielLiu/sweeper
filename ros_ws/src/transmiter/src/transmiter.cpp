@@ -4,6 +4,7 @@
 #include <can_msgs/FrameArray.h>
 #include <transmiter/AreasInfo.h>
 #include <transmiter/EnvInfo.h>
+#include <transmiter/Objects.h>
 
 #define __NAME__ "transmiter_node"
 
@@ -12,15 +13,29 @@ class Transmiter
 public:
 	Transmiter()
 	{
-		areas_info_frames_.header.frame_id = "ch1";
+		can_channel = "ch1";
+		area_info_can_id = 0x18FFF061;
+		env_info_can_id = 0x18FFF161;
+		obstacles_can_ids.push_back(0x18FFF361);
+		obstacles_can_ids.push_back(0x18FFF461);
+		obstacles_can_ids.push_back(0x18FFF561);
+		obstacles_can_ids.push_back(0x18FFF661);
+		obstacles_can_ids.push_back(0x18FFF761);
+		obstacles_can_ids.push_back(0x18FFF861);
+		obstacles_can_ids.push_back(0x18FFF961);
+		obstacles_can_ids.push_back(0x18FFFA61);
+		
+		areas_info_frames_.header.frame_id = can_channel;
 		areas_info_frames_.frames.resize(1);
-		areas_info_frames_.frames[0].id = 0x400;
+		areas_info_frames_.frames[0].id = area_info_can_id;
 		areas_info_frames_.frames[0].len = 8;
 
-		env_info_frames_.header.frame_id = "ch1";
+		env_info_frames_.header.frame_id = can_channel;
 		env_info_frames_.frames.resize(1);
-		env_info_frames_.frames[0].id = 0x401;
+		env_info_frames_.frames[0].id = env_info_can_id;
 		env_info_frames_.frames[0].len = 8;
+		
+		obstacle_frames_.header.frame_id = can_channel;
 	}
 	~Transmiter(){};
 	bool init()
@@ -32,10 +47,38 @@ public:
 
 		sub_area_info_ = nh.subscribe("sweeper/area_info",1,&Transmiter::areasInfoCallback,this);
 		sub_env_info_  = nh.subscribe("sweeper/env_info", 1,&Transmiter::envInfoCallback,this);
+		sub_obstacle_  = nh.subscribe("sweeper/obstacles", 1, &Transmiter::obstaclesCallback, this);
 
 		pub_can_msgs_  = nh.advertise<can_msgs::FrameArray>(to_can_topic,1);
 	}
-
+	
+	void obstaclesCallback(const transmiter::Objects::ConstPtr& obstacles)
+	{
+		obstacle_frames_.header.stamp = obstacles->header.stamp;
+		
+		size_t cnt = obstacles->objects.size();
+		if(cnt > 8) cnt = 8;
+		
+		obstacle_frames_.frames.resize(cnt);
+		for(size_t i=0; i<cnt; ++i)
+		{
+			can_msgs::Frame& frame = obstacle_frames_.frames[i];
+			frame.id = obstacles_can_ids[i];
+			
+			float x = obstacles->objects[i].x;
+			float y = obstacles->objects[i].y;
+			float w = obstacles->objects[i].w;
+			float h = obstacles->objects[i].h;
+			
+			*(uint16_t *)(&frame.data[0]) = uint16_t(x*100);
+			*(uint16_t *)(&frame.data[2]) = uint16_t(y*100);
+			*(uint16_t *)(&frame.data[4]) = uint16_t(h*100);
+			*(uint16_t *)(&frame.data[6]) = uint16_t(w*100);
+			
+		}
+		pub_can_msgs_.publish(obstacle_frames_);
+	}
+	
 	void areasInfoCallback(const transmiter::AreasInfo::ConstPtr& areas_info)
 	{
 		areas_info_frames_.header.stamp = areas_info->header.stamp;
@@ -82,11 +125,18 @@ public:
 private:
 	ros::Subscriber sub_area_info_;
 	ros::Subscriber sub_env_info_;
+	ros::Subscriber sub_obstacle_;
+	
 	ros::Publisher  pub_can_msgs_;
 
 	can_msgs::FrameArray areas_info_frames_;
-
 	can_msgs::FrameArray env_info_frames_;
+	can_msgs::FrameArray obstacle_frames_;
+	
+	uint32_t area_info_can_id;
+	uint32_t env_info_can_id;
+	std::vector<uint32_t> obstacles_can_ids;
+	std::string can_channel;
 };
 
 
