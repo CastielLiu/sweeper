@@ -57,7 +57,15 @@ public:
 		obstacle_frames_.header.stamp = obstacles->header.stamp;
 		
 		size_t cnt = obstacles->objects.size();
-		if(cnt > 8) cnt = 8;
+		if(cnt > 8) //障碍个数过多
+		{
+			alarmCode_ = 0x1; //warning
+			cnt = 8;
+		}
+		else
+		{
+			alarmCode_ = 0x0;
+		}
 		
 		obstacle_frames_.frames.resize(cnt);
 		for(size_t i=0; i<cnt; ++i)
@@ -106,10 +114,15 @@ public:
 				continue;
 			}
 			
+			//行人
 			if(areaInfo.has_person)
 				frame.data[4] |= (1<<(areaInfo.area_id-1));
+			//垃圾等级
 			frame.data[(areaInfo.area_id-1)/2] |= areaInfo.rubbish_grade << (4*((areaInfo.area_id-1)%2));
+			//植被类型
 			frame.data[(areaInfo.area_id-1)/4+5] |= areaInfo.vegetation_type << 2*((areaInfo.area_id-1)%4);
+			//报警信息
+			frame.data[7] |= (alarmCode_&0x3);
  
 		}
 		pub_can_msgs_.publish(areas_info_frames_);
@@ -137,6 +150,7 @@ private:
 	uint32_t env_info_can_id;
 	std::vector<uint32_t> obstacles_can_ids;
 	std::string can_channel;
+	uint8_t alarmCode_;
 };
 
 
