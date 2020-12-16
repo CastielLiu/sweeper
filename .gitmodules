@@ -7,3 +7,6 @@
 [submodule "ros_ws/src/ros_can"]
 	path = ros_ws/src/ros_can
 	url = https://github.com/CastielLiu/ros_can.git
+[submodule "ros_ws/src/sweeper_detection"]
+	path = ros_ws/src/sweeper_detection
+	url = https://github.com/shangjie-li/sweeper_detection.git
