@@ -6,6 +6,7 @@
 #include <transmiter/EnvInfo.h>
 #include <transmiter/Objects.h>
 #include <sensor_msgs/Image.h>
+#include <std_msgs/Bool.h>
 
 #define __NAME__ "transmiter_node"
 
@@ -43,7 +44,6 @@ public:
 		error_code_frames_.frames.resize(1);
 		error_code_frames_.frames[0].id = error_code_id;
 		error_code_frames_.frames[0].len = 8;
-		
 	}
 	~Transmiter(){};
 	bool init()
@@ -60,7 +60,8 @@ public:
 		sub_camera_left_ = nh.subscribe(nh_private.param<std::string>("left_camera_topic","camera_l"), 1, &Transmiter::leftCameraCallback, this);
 		sub_camera_right_ = nh.subscribe(nh_private.param<std::string>("right_camera_topic","camera_r"), 1, &Transmiter::rightCameraCallback, this);
 		sub_zed_camera_ = nh.subscribe(nh_private.param<std::string>("zed_camera_topic","camera_zed"), 1, &Transmiter::zedCameraCallback, this);
-
+		
+		pub_sensor_status_ = nh.advertise<std_msgs::Bool>("sensor_status", 1);
 		pub_can_msgs_  = nh.advertise<can_msgs::FrameArray>(to_can_topic,1);
 		error_detect_timer_ = nh.createTimer(ros::Duration(1), &Transmiter::errorDetectCallback, this);
 	}
@@ -69,12 +70,14 @@ public:
 	{
 		ros::Time now = ros::Time::now();
 		can_msgs::Frame &frame = error_code_frames_.frames[0];
-		
+		std_msgs::Bool sensor_status;
+		sensor_status.data = true;
 		
 		if(now-camera_l_time_last_ > ros::Duration(1.0)) //left_camera_offline
 		{
 			ROS_ERROR("left camera is offline.");
 			frame.data[0] |= 0x01;
+			sensor_status.data = false;
 		}
 		else
 			frame.data[0] &= (~0x01);
@@ -83,6 +86,7 @@ public:
 		{
 			ROS_ERROR("right camera is offline.");
 			frame.data[0] |= 0x02;
+			sensor_status.data = false;
 		}
 		else
 			frame.data[0] &= (~0x02);
@@ -91,11 +95,13 @@ public:
 		{
 			ROS_ERROR("zed camera is offline.");
 			frame.data[0] |= 0x04;
+			sensor_status.data = false;
 		}
 		else
 			frame.data[0] &= (~0x04);
 		
 		pub_can_msgs_.publish(error_code_frames_);
+		pub_sensor_status_.publish(sensor_status);
 		
 	}
 	
@@ -204,6 +210,7 @@ private:
 	ros::Subscriber sub_camera_right_;
 	ros::Subscriber sub_zed_camera_;
 	
+	ros::Publisher  pub_sensor_status_;
 	ros::Publisher  pub_can_msgs_;
 	ros::Timer error_detect_timer_;
 
