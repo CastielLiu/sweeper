@@ -17,6 +17,10 @@
 	<node name="transmiter_node" pkg="transmiter" type="transmiter_node" output="screen">
 		<param name ="from_can_topic"  type ="string"  value="/from_can_topic"/>
 		<param name ="to_can_topic"    type ="string"  value="/to_can_topic"/>
+		<param name = "left_camera_topic"  value="//image_rectified"/>
+		<param name = "right_camera_topic"  value="/camera_r"/>
+		<param name = "zed_camera_topic"  value="/camera_zed"/>
+		
 	</node>
 
 </launch>

@@ -5,6 +5,7 @@
 #include <transmiter/AreasInfo.h>
 #include <transmiter/EnvInfo.h>
 #include <transmiter/Objects.h>
+#include <sensor_msgs/Image.h>
 
 #define __NAME__ "transmiter_node"
 
@@ -15,7 +16,10 @@ public:
 	{
 		can_channel = "ch1";
 		area_info_can_id = 0x18FFF061;
-		env_info_can_id = 0x18FFF161;
+		env_info_can_id  = 0x18FFF161;
+		error_code_id    = 0x400;
+		
+		obstacle_frames_.header.frame_id = can_channel;
 		obstacles_can_ids.push_back(0x18FFF361);
 		obstacles_can_ids.push_back(0x18FFF461);
 		obstacles_can_ids.push_back(0x18FFF561);
@@ -35,7 +39,11 @@ public:
 		env_info_frames_.frames[0].id = env_info_can_id;
 		env_info_frames_.frames[0].len = 8;
 		
-		obstacle_frames_.header.frame_id = can_channel;
+		error_code_frames_.header.frame_id = can_channel;
+		error_code_frames_.frames.resize(1);
+		error_code_frames_.frames[0].id = error_code_id;
+		error_code_frames_.frames[0].len = 8;
+		
 	}
 	~Transmiter(){};
 	bool init()
@@ -48,8 +56,60 @@ public:
 		sub_area_info_ = nh.subscribe("sweeper/area_info",1,&Transmiter::areasInfoCallback,this);
 		sub_env_info_  = nh.subscribe("sweeper/env_info", 1,&Transmiter::envInfoCallback,this);
 		sub_obstacle_  = nh.subscribe("sweeper/obstacles", 1, &Transmiter::obstaclesCallback, this);
+		
+		sub_camera_left_ = nh.subscribe(nh_private.param<std::string>("left_camera_topic","camera_l"), 1, &Transmiter::leftCameraCallback, this);
+		sub_camera_right_ = nh.subscribe(nh_private.param<std::string>("right_camera_topic","camera_r"), 1, &Transmiter::rightCameraCallback, this);
+		sub_zed_camera_ = nh.subscribe(nh_private.param<std::string>("zed_camera_topic","camera_zed"), 1, &Transmiter::zedCameraCallback, this);
 
 		pub_can_msgs_  = nh.advertise<can_msgs::FrameArray>(to_can_topic,1);
+		error_detect_timer_ = nh.createTimer(ros::Duration(1), &Transmiter::errorDetectCallback, this);
+	}
+	
+	void errorDetectCallback(const ros::TimerEvent&)
+	{
+		ros::Time now = ros::Time::now();
+		can_msgs::Frame &frame = error_code_frames_.frames[0];
+		
+		
+		if(now-camera_l_time_last_ > ros::Duration(1.0)) //left_camera_offline
+		{
+			ROS_ERROR("left camera is offline.");
+			frame.data[0] |= 0x01;
+		}
+		else
+			frame.data[0] &= (~0x01);
+		
+		if(now-camera_r_time_last_ > ros::Duration(1.0)) //right_camera_offline
+		{
+			ROS_ERROR("right camera is offline.");
+			frame.data[0] |= 0x02;
+		}
+		else
+			frame.data[0] &= (~0x02);
+			
+		if(now-camera_zed_time_last_ > ros::Duration(1.0)) //zed_camera_offline
+		{
+			ROS_ERROR("zed camera is offline.");
+			frame.data[0] |= 0x04;
+		}
+		else
+			frame.data[0] &= (~0x04);
+		
+		pub_can_msgs_.publish(error_code_frames_);
+		
+	}
+	
+	void leftCameraCallback(const sensor_msgs::Image::ConstPtr msg)
+	{
+		camera_l_time_last_ = ros::Time::now();
+	}
+	void rightCameraCallback(const sensor_msgs::Image::ConstPtr msg)
+	{
+		camera_r_time_last_ = ros::Time::now();
+	}
+	void zedCameraCallback(const sensor_msgs::Image::ConstPtr msg)
+	{
+		camera_zed_time_last_ = ros::Time::now();
 	}
 	
 	void obstaclesCallback(const transmiter::Objects::ConstPtr& obstacles)
@@ -140,14 +200,25 @@ private:
 	ros::Subscriber sub_env_info_;
 	ros::Subscriber sub_obstacle_;
 	
+	ros::Subscriber sub_camera_left_;
+	ros::Subscriber sub_camera_right_;
+	ros::Subscriber sub_zed_camera_;
+	
 	ros::Publisher  pub_can_msgs_;
+	ros::Timer error_detect_timer_;
 
 	can_msgs::FrameArray areas_info_frames_;
 	can_msgs::FrameArray env_info_frames_;
 	can_msgs::FrameArray obstacle_frames_;
+	can_msgs::FrameArray error_code_frames_;
+	
+	ros::Time camera_l_time_last_;
+	ros::Time camera_r_time_last_;
+	ros::Time camera_zed_time_last_;
 	
 	uint32_t area_info_can_id;
 	uint32_t env_info_can_id;
+	uint32_t error_code_id;
 	std::vector<uint32_t> obstacles_can_ids;
 	std::string can_channel;
 	uint8_t alarmCode_;
