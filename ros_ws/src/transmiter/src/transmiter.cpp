@@ -18,7 +18,7 @@ public:
 		can_channel = "ch1";
 		area_info_can_id = 0x18FFF061;
 		env_info_can_id  = 0x18FFF161;
-		error_code_id    = 0x400;
+		error_code_id    = 0x18FFF400;
 		
 		obstacle_frames_.header.frame_id = can_channel;
 		obstacles_can_ids.push_back(0x18FFF361);
@@ -34,16 +34,20 @@ public:
 		areas_info_frames_.frames.resize(1);
 		areas_info_frames_.frames[0].id = area_info_can_id;
 		areas_info_frames_.frames[0].len = 8;
+		areas_info_frames_.frames[0].is_extended = true;
 
 		env_info_frames_.header.frame_id = can_channel;
 		env_info_frames_.frames.resize(1);
 		env_info_frames_.frames[0].id = env_info_can_id;
 		env_info_frames_.frames[0].len = 8;
+		env_info_frames_.frames[0].is_extended = true;
 		
 		error_code_frames_.header.frame_id = can_channel;
 		error_code_frames_.frames.resize(1);
 		error_code_frames_.frames[0].id = error_code_id;
 		error_code_frames_.frames[0].len = 8;
+		error_code_frames_.frames[0].is_extended = true;
+
 	}
 	~Transmiter(){};
 	bool init()
@@ -138,6 +142,7 @@ public:
 		{
 			can_msgs::Frame& frame = obstacle_frames_.frames[i];
 			frame.id = obstacles_can_ids[i];
+			frame.is_extended = true;
 			
 			float x = obstacles->objects[i].x;
 			float y = obstacles->objects[i].y;

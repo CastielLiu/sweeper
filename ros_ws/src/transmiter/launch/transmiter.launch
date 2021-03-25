@@ -5,7 +5,7 @@
 		<rosparam param="acc_code" >  [0x000,0x000] </rosparam>
 		<rosparam param="mask_code" > [0x000,0x000] </rosparam>
 	
-		<rosparam param="baudrate" > [500,500] </rosparam>
+		<rosparam param="baudrate" > [250,250] </rosparam>
 		<rosparam param="frame_id" > ["ch1","ch2"] </rosparam>
 	
 		<!--from_can_topic can分析仪发送的话题-->
@@ -17,9 +17,9 @@
 	<node name="transmiter_node" pkg="transmiter" type="transmiter_node" output="screen">
 		<param name ="from_can_topic"  type ="string"  value="/from_can_topic"/>
 		<param name ="to_can_topic"    type ="string"  value="/to_can_topic"/>
-		<param name = "left_camera_topic"  value="//image_rectified"/>
-		<param name = "right_camera_topic"  value="/camera_r"/>
-		<param name = "zed_camera_topic"  value="/camera_zed"/>
+		<param name = "left_camera_topic"  value="/left_usb_cam/image_raw"/>
+		<param name = "right_camera_topic"  value="/usb_cam/image_raw"/>
+		<param name = "zed_camera_topic"  value="/zed_usb_cam/image_raw"/>
 		
 	</node>
 
