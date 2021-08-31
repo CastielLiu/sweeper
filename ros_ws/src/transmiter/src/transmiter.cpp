@@ -6,7 +6,7 @@
 #include <transmiter/EnvInfo.h>
 #include <transmiter/Objects.h>
 #include <sensor_msgs/Image.h>
-#include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
 
 #define __NAME__ "transmiter_node"
 
@@ -65,7 +65,7 @@ public:
 		sub_camera_right_ = nh.subscribe(nh_private.param<std::string>("right_camera_topic","camera_r"), 1, &Transmiter::rightCameraCallback, this);
 		sub_zed_camera_ = nh.subscribe(nh_private.param<std::string>("zed_camera_topic","camera_zed"), 1, &Transmiter::zedCameraCallback, this);
 		
-		pub_sensor_status_ = nh.advertise<std_msgs::Bool>("sensor_status", 1);
+		pub_sensor_status_ = nh.advertise<std_msgs::String>("sensor_status", 1);
 		pub_can_msgs_  = nh.advertise<can_msgs::FrameArray>(to_can_topic,1);
 		error_detect_timer_ = nh.createTimer(ros::Duration(1), &Transmiter::errorDetectCallback, this);
 	}
@@ -74,14 +74,13 @@ public:
 	{
 		ros::Time now = ros::Time::now();
 		can_msgs::Frame &frame = error_code_frames_.frames[0];
-		std_msgs::Bool sensor_status;
-		sensor_status.data = true;
+		std_msgs::String sensor_status;
 		
 		if(now-camera_l_time_last_ > ros::Duration(1.0)) //left_camera_offline
 		{
 			ROS_ERROR("left camera is offline.");
 			frame.data[0] |= 0x01;
-			sensor_status.data = false;
+			sensor_status.data += "left camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x01);
@@ -90,7 +89,7 @@ public:
 		{
 			ROS_ERROR("right camera is offline.");
 			frame.data[0] |= 0x02;
-			sensor_status.data = false;
+			sensor_status.data += "right camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x02);
@@ -99,7 +98,7 @@ public:
 		{
 			ROS_ERROR("zed camera is offline.");
 			frame.data[0] |= 0x04;
-			sensor_status.data = false;
+			sensor_status.data += "zed camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x04);

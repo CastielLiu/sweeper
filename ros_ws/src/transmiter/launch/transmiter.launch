@@ -14,11 +14,11 @@
 		<param name ="to_can_topic"    type ="string"  value="/to_can_topic"/>
 	</node>
 	
-	<node name="transmiter_node" pkg="transmiter" type="transmiter_node" output="screen">
+	<node name="transmiter_node" pkg="transmiter" type="transmiter_node" output="screen" respawn="true">
 		<param name ="from_can_topic"  type ="string"  value="/from_can_topic"/>
 		<param name ="to_can_topic"    type ="string"  value="/to_can_topic"/>
 		<param name = "left_camera_topic"  value="/left_usb_cam/image_raw"/>
-		<param name = "right_camera_topic"  value="/usb_cam/image_raw"/>
+		<param name = "right_camera_topic"  value="/right_usb_cam/image_raw"/>
 		<param name = "zed_camera_topic"  value="/zed_usb_cam/image_raw"/>
 		
 	</node>
