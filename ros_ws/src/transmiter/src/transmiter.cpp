@@ -7,6 +7,7 @@
 #include <transmiter/Objects.h>
 #include <sensor_msgs/Image.h>
 #include <std_msgs/String.h>
+#include "log.h"
 
 #define __NAME__ "transmiter_node"
 
@@ -57,6 +58,12 @@ public:
 		std::string to_can_topic = nh_private.param<std::string>("to_can_topic","to_can_topic");
 		std::string from_can_topic = nh_private.param<std::string>("from_can_topic","from_can_topic");
 
+		std::string log_dir = nh_private.param<std::string>("log_dir", "");
+		if(!mLog.init(log_dir))
+			return false;
+		mLog.addIntervalWriter("erro_code", 0, 5.0);
+
+
 		sub_area_info_ = nh.subscribe("sweeper/area_info",1,&Transmiter::areasInfoCallback,this);
 		sub_env_info_  = nh.subscribe("sweeper/env_info", 1,&Transmiter::envInfoCallback,this);
 		sub_obstacle_  = nh.subscribe("sweeper/obstacles", 1, &Transmiter::obstaclesCallback, this);
@@ -68,19 +75,20 @@ public:
 		pub_sensor_status_ = nh.advertise<std_msgs::String>("sensor_status", 1);
 		pub_can_msgs_  = nh.advertise<can_msgs::FrameArray>(to_can_topic,1);
 		error_detect_timer_ = nh.createTimer(ros::Duration(1), &Transmiter::errorDetectCallback, this);
+		return true;
 	}
 	
 	void errorDetectCallback(const ros::TimerEvent&)
 	{
 		ros::Time now = ros::Time::now();
 		can_msgs::Frame &frame = error_code_frames_.frames[0];
-		std_msgs::String sensor_status;
+		std::string infomation;
 		
 		if(now-camera_l_time_last_ > ros::Duration(1.0)) //left_camera_offline
 		{
 			ROS_ERROR("left camera is offline.");
 			frame.data[0] |= 0x01;
-			sensor_status.data += "left camera offline.   ";
+			infomation += "left camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x01);
@@ -89,7 +97,7 @@ public:
 		{
 			ROS_ERROR("right camera is offline.");
 			frame.data[0] |= 0x02;
-			sensor_status.data += "right camera offline.   ";
+			infomation += "right camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x02);
@@ -98,12 +106,17 @@ public:
 		{
 			ROS_ERROR("zed camera is offline.");
 			frame.data[0] |= 0x04;
-			sensor_status.data += "zed camera offline.   ";
+			infomation += "zed camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x04);
 		
+		mLog.write(infomation, 0);
+
 		pub_can_msgs_.publish(error_code_frames_);
+		std_msgs::String sensor_status;
+		sensor_status.data = infomation;
+
 		pub_sensor_status_.publish(sensor_status);
 		
 	}
@@ -233,6 +246,8 @@ private:
 	std::vector<uint32_t> obstacles_can_ids;
 	std::string can_channel;
 	uint8_t alarmCode_;
+
+	Log mLog;
 };
 
 

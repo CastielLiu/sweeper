@@ -1,12 +1,14 @@
 [submodule "ros_ws/src/image_saver"]
 	path = ros_ws/src/image_saver
-	url = https://github.com/CastielLiu/image_saver.git
+	url = https://github.com.cnpmjs.org/CastielLiu/image_saver.git
 [submodule "ros_ws/src/my_image_publisher"]
 	path = ros_ws/src/my_image_publisher
-	url = https://github.com/CastielLiu/my_image_publisher
-[submodule "ros_ws/src/ros_can"]
-	path = ros_ws/src/ros_can
-	url = https://github.com/CastielLiu/ros_can.git
+	url = https://github.com.cnpmjs.org/CastielLiu/my_image_publisher
+
 [submodule "ros_ws/src/sweeper_detection"]
 	path = ros_ws/src/sweeper_detection
-	url = https://github.com/shangjie-li/sweeper_detection.git
+	url = https://github.com.cnpmjs.org/shangjie-li/sweeper_detection.git
+
+[submodule "ros_ws/src/ros_can"]
+	path = ros_ws/src/ros_can
+	url = https://github.com.cnpmjs.org/CastielLiu/ros_can.git
