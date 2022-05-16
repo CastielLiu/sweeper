@@ -1,3 +1,4 @@
+#include <vector>
 #include <ros/ros.h>
 #include <iostream>
 #include <can_msgs/Frame.h>
@@ -7,19 +8,20 @@
 #include <transmiter/Objects.h>
 #include <sensor_msgs/Image.h>
 #include <std_msgs/String.h>
-#include "log.h"
+#include <boost/circular_buffer.hpp>
 
 #define __NAME__ "transmiter_node"
 
 class Transmiter
 {
 public:
-	Transmiter()
+    Transmiter():
+        areas_info_buffer_(50)
 	{
 		can_channel = "ch1";
 		area_info_can_id = 0x18FFF061;
 		env_info_can_id  = 0x18FFF161;
-		error_code_id    = 0x18FFF400;
+		error_code_id    = 0x18FFFB61;
 		
 		obstacle_frames_.header.frame_id = can_channel;
 		obstacles_can_ids.push_back(0x18FFF361);
@@ -58,12 +60,6 @@ public:
 		std::string to_can_topic = nh_private.param<std::string>("to_can_topic","to_can_topic");
 		std::string from_can_topic = nh_private.param<std::string>("from_can_topic","from_can_topic");
 
-		std::string log_dir = nh_private.param<std::string>("log_dir", "");
-		if(!mLog.init(log_dir))
-			return false;
-		mLog.addIntervalWriter("erro_code", 0, 5.0);
-
-
 		sub_area_info_ = nh.subscribe("sweeper/area_info",1,&Transmiter::areasInfoCallback,this);
 		sub_env_info_  = nh.subscribe("sweeper/env_info", 1,&Transmiter::envInfoCallback,this);
 		sub_obstacle_  = nh.subscribe("sweeper/obstacles", 1, &Transmiter::obstaclesCallback, this);
@@ -75,20 +71,78 @@ public:
 		pub_sensor_status_ = nh.advertise<std_msgs::String>("sensor_status", 1);
 		pub_can_msgs_  = nh.advertise<can_msgs::FrameArray>(to_can_topic,1);
 		error_detect_timer_ = nh.createTimer(ros::Duration(1), &Transmiter::errorDetectCallback, this);
-		return true;
+
+        float interval = nh_private.param<float>("interval",5.0);
+        pub_timer_ = nh.createTimer(ros::Duration(interval), &Transmiter::pubTimerCallback, this);
 	}
+
+    void pubTimerCallback(const ros::TimerEvent&){
+        if(areas_info_buffer_.empty()){
+            return;
+        }
+        const transmiter::AreasInfo::ConstPtr& areas_info_now = areas_info_buffer_.back();
+        areas_info_frames_.header.stamp = areas_info_now->header.stamp;
+        can_msgs::Frame& frame = areas_info_frames_.frames[0];
+        for(auto& byte:frame.data) byte = 0;
+
+        std::vector<int> areas_rubbish_grade(8, 0);
+        for(const transmiter::AreasInfo::ConstPtr& areas_info : areas_info_buffer_){
+            for(size_t i=0; i< areas_info->infos.size(); ++i){
+                const transmiter::AreaInfo& areaInfo = areas_info->infos[i];
+                if(areaInfo.area_id <=0 || areaInfo.area_id>8){
+                    continue;
+                }
+                if(areaInfo.rubbish_grade > 8){
+                    continue;
+                }
+                if(areaInfo.vegetation_type >3){
+                   continue;
+                }
+                areas_rubbish_grade[areaInfo.area_id-1] += areaInfo.rubbish_grade;
+            }
+        }
+        for(int i=0; i<8; ++i){
+            int area_id = i + 1;
+            //垃圾等级
+            frame.data[(area_id-1)/2] |= areas_rubbish_grade[i] << (4*((area_id-1)%2));
+        }
+
+        // 填充当前帧检测信息
+        for(size_t i=0; i< areas_info_now->infos.size(); ++i){
+            const transmiter::AreaInfo& areaInfo = areas_info_now->infos[i];
+            if(areaInfo.area_id <=0 || areaInfo.area_id>8){
+                continue;
+            }
+            if(areaInfo.rubbish_grade > 8){
+                continue;
+            }
+            if(areaInfo.vegetation_type >3){
+               continue;
+            }
+
+            //行人
+            if(areaInfo.has_person)
+                frame.data[4] |= (1<<(areaInfo.area_id-1));
+            //植被类型
+            frame.data[(areaInfo.area_id-1)/4+5] |= areaInfo.vegetation_type << 2*((areaInfo.area_id-1)%4);
+        }
+
+        //报警信息
+        frame.data[7] |= (alarmCode_&0x3);
+        pub_can_msgs_.publish(areas_info_frames_);
+    }
 	
 	void errorDetectCallback(const ros::TimerEvent&)
 	{
 		ros::Time now = ros::Time::now();
 		can_msgs::Frame &frame = error_code_frames_.frames[0];
-		std::string infomation;
+		std_msgs::String sensor_status;
 		
 		if(now-camera_l_time_last_ > ros::Duration(1.0)) //left_camera_offline
 		{
 			ROS_ERROR("left camera is offline.");
 			frame.data[0] |= 0x01;
-			infomation += "left camera offline.   ";
+			sensor_status.data += "left camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x01);
@@ -97,7 +151,7 @@ public:
 		{
 			ROS_ERROR("right camera is offline.");
 			frame.data[0] |= 0x02;
-			infomation += "right camera offline.   ";
+			sensor_status.data += "right camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x02);
@@ -106,17 +160,12 @@ public:
 		{
 			ROS_ERROR("zed camera is offline.");
 			frame.data[0] |= 0x04;
-			infomation += "zed camera offline.   ";
+			sensor_status.data += "zed camera offline.   ";
 		}
 		else
 			frame.data[0] &= (~0x04);
 		
-		mLog.write(infomation, 0);
-
 		pub_can_msgs_.publish(error_code_frames_);
-		std_msgs::String sensor_status;
-		sensor_status.data = infomation;
-
 		pub_sensor_status_.publish(sensor_status);
 		
 	}
@@ -169,7 +218,7 @@ public:
 		}
 		pub_can_msgs_.publish(obstacle_frames_);
 	}
-	
+#if 0	
 	void areasInfoCallback(const transmiter::AreasInfo::ConstPtr& areas_info)
 	{
 		areas_info_frames_.header.stamp = areas_info->header.stamp;
@@ -210,6 +259,12 @@ public:
 		}
 		pub_can_msgs_.publish(areas_info_frames_);
 	}
+#else
+	void areasInfoCallback(const transmiter::AreasInfo::ConstPtr& areas_info)
+    {
+        areas_info_buffer_.push_back(areas_info);
+	}
+#endif
 
 	void envInfoCallback(const transmiter::EnvInfo::ConstPtr& env_info)
 	{
@@ -247,7 +302,8 @@ private:
 	std::string can_channel;
 	uint8_t alarmCode_;
 
-	Log mLog;
+    ros::Timer pub_timer_;
+    boost::circular_buffer<transmiter::AreasInfo::ConstPtr> areas_info_buffer_;
 };
 
 

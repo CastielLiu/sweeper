@@ -25,6 +25,9 @@
 2. "from_can_topic" [string ] default: "from_can_topic"
 	订阅can分析仪发布的can数据帧
 
+3. "interval" [float] default: 5.0
+    发布区域信息的时间间隔
+
 ### Node logger_node 测试文件记录节点
 1. 订阅环境识别原始消息以及编码后的can消息，将其保存于txt文档
 2. 文档内容包括 时间戳	[区域ID,垃圾等级,行人有无,植被类型,]...	16进制can消息(按照0-7排布)

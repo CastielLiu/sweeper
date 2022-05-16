@@ -1,10 +1,7 @@
 <!--   -->
 
 <launch>
-	<arg name="usbcan_log_dir" default="/tmp/log/usbcan/"/>
-	<arg name="transmiter_log_dir" default="/tmp/log/sweeper_trans/"/>
-
-	<node name="usbcan_driver_node" pkg="usbcan_driver" type="usbcan_driver_node" output="screen" respawn="true">
+	<node name="usbcan_driver_node" pkg="usbcan_driver" type="usbcan_driver_node" output="screen">
 		<rosparam param="acc_code" >  [0x000,0x000] </rosparam>
 		<rosparam param="mask_code" > [0x000,0x000] </rosparam>
 	
@@ -15,8 +12,6 @@
 		<!--to_can_topic   can分析仪接收的话题-->
 		<param name ="from_can_topic"  type ="string"  value="/from_can_topic"/>
 		<param name ="to_can_topic"    type ="string"  value="/to_can_topic"/>
-
-		<param name ="log_dir"    type ="string"  value="$(arg usbcan_log_dir)"/>
 	</node>
 	
 	<node name="transmiter_node" pkg="transmiter" type="transmiter_node" output="screen" respawn="true">
@@ -26,7 +21,8 @@
 		<param name = "right_camera_topic"  value="/right_usb_cam/image_raw"/>
 		<param name = "zed_camera_topic"  value="/zed_usb_cam/image_raw"/>
 
-		<param name ="log_dir"    type ="string"  value="$(arg transmiter_log_dir)"/>
+        <!--区域信息发布周期 -->
+		<param name= "interval" value="5.0"/>
 		
 	</node>
 
